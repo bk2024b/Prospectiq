@@ -34,24 +34,23 @@ export async function POST(req: NextRequest) {
 
   // Réveille le worker hébergé de manière asynchrone — on ne bloque pas la
   // réponse sur la durée du scraping.
-  fetch(`${process.env.WORKER_URL}/scrape`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${process.env.WORKER_SECRET}`,
-  },
-  body: JSON.stringify({ searchId: search.id, niche, city, userId: user.id }),
-})
-  .then((r) => {
-    if (!r.ok) {
-      r.text().then((body) =>
-        console.error(`Worker a répondu ${r.status}:`, body)
-      );
-    }
-  })
-  .catch((err) => {
-    console.error("Impossible de joindre le worker:", err);
+  try {
+  const workerRes = await fetch(`${process.env.WORKER_URL}/scrape`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.WORKER_SECRET}`,
+    },
+    body: JSON.stringify({ searchId: search.id, niche, city, userId: user.id }),
   });
+
+  if (!workerRes.ok) {
+    const body = await workerRes.text();
+    console.error(`Worker a répondu ${workerRes.status}:`, body);
+  }
+} catch (err) {
+  console.error("Impossible de joindre le worker:", err);
+}
 
   return NextResponse.json({ searchId: search.id });
 }
